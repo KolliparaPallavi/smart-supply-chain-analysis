@@ -9,16 +9,39 @@ Perform data cleaning and preprocessing to ensure consistency.
 ### Dataset
 The dataset is sourced from Kaggle: DataCo Smart Supply Chain Dataset.
 ### Key Variables:
-<th> Variable </th>	<th> Type	</th> <th> Description </th>
-Order State	Character	Australian state of the order<br>
-Product Price	Numeric	Price of individual product
-Product Name	Character	Name of the product
-Order Item Discount	Numeric	Discount applied per order item
-Order Item Quantity	Numeric	Quantity ordered
-Order Item Total	Numeric	Total cost per order item
-Benefit per Order	Numeric	Profit/benefit per order
-Delivery Status	Factor	Delivery outcome (On time, Late, etc.)
-Shipping Mode	Character	Mode of shipping used
+<table>
+  <tr>
+    <th>Variable</th><th>Type</th><th>Description</th>
+  </tr>
+  <tr>
+    <td>Order State</td><td>Character</td><td>Australian state of the order</td>
+  </tr>
+  <tr>
+    <td>Product Price</td><td>Numeric</td><td>Price of individual product</td>
+  </tr>
+  <tr>
+    <td>Product Name</td><td>Character</td><td>Name of the product</td>
+  </tr>
+  <tr>
+    <td>Order Item Discount</td><td>Numeric</td><td>Discount applied per order item</td>
+  </tr>
+  <tr>
+    <td>Order Item Quantity</td><td>Numeric</td><td>Quantity ordered</td>
+  </tr>
+  <tr>
+    <td>Order Item Total</td><td>Numeric</td><td>Total cost per order item</td>
+  </tr>
+  <tr>
+    <td>Benefit per Order</td><td>Numeric</td><td>Profit/benefit per order</td>
+  </tr>
+  <tr>
+    <td>Delivery Status</td><td>Factor</td><td>Delivery outcome (On time, Late, etc.)</td>
+  </tr>
+  <tr>
+    <td>Shipping Mode</td><td>Character</td><td>Mode of shipping used</td>
+  </tr>
+</table>
+
 ### Methodology
 #### Data Preprocessing:
 Filtered dataset to only include Australian orders.<br>
