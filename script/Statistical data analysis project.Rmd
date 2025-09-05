@@ -1,0 +1,233 @@
+---
+title: "Statistical data analysis project (or Assignment2)"
+author: "Pallavi Kollipara (s4015344), Priyanka Tiwari (s4016331)"
+date: "2024-06-02"
+output:
+  beamer_presentation: default
+  powerpoint_presentation: default
+  slidy_presentation: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+
+## Introduction
+The efficiency and reliability of shipping logistics plays a critical role in customer satisfaction and success of the business. In competitive landscape of supply chain management, understanding the factors that influence the delivery performance is paramount. The dataset provides various insights into shipping logistics, including delivery times, order details, delivery status, etc.
+
+## Problem Statement
+* In this report we tried to examine the association between different shipping modes and delivery status to assess if certain shipping methods lead to better delivery outcomes.
+* We attempted to examine the correlation between `Benefit per order` and `Order Item Total` through linear regression analysis.
+* Summary statistics will be performed on the `Order Item Total` variable, which will be grouped by the `Order States`. 
+* Outliers will be checked for using box plot visualisations and missing values will be checked for as well.
+* Chi_square testing will be performed.
+* Linear regression will be performed.
+
+
+## Data
+
+* The DataCo Smart Supply Chain dataset, available on Kaggle, comprises information on various aspects of a supply chain, including orders, customers, products, and delivery details, for big data analysis. The link to the website is provided below.
+* Dataset Link - https://www.kaggle.com/datasets/shashwatwork/dataco-smart-supply-chain-for-big-data-analysis?resource=download
+
+### Variables:
+* Order State - Character                  
+* Product Price - Numeric
+* Product Name - Character
+* Order Item Discount - Numeric
+* Order Item Quantity - Numeric
+* Order Item Total - Numeric
+* Benefit per Order - Numeric
+* Delivery Status - Factor
+* Shipping Mode - Character
+
+
+## Pre Processing
+
+1. Data subsetted to include only orders from Australia.
+2. Selected columns relevant to order and product details.
+3. Converted "Delivery Status" into an ordered factor for analysis.
+4. Standardized Australian state names for consistency.
+5. Prepared dataset for further analysis focusing on Australian orders.
+
+```{r message = FALSE, warning = FALSE}
+
+library(readr)
+library(dplyr)
+library(RColorBrewer)
+library(ggplot2)
+supchain <- as.data.frame(read_csv("DataCoSupplyChainDataset.csv"))
+supchain<- subset(supchain, `Order Country` == "Australia")
+supchain <- supchain[, c("Order State","Product Price", "Order Item Discount","Product Name" ,
+                         "Order Item Quantity","Order Item Total", "Shipping Mode",
+                         "Benefit per order","Delivery Status")]
+
+supchain $`Delivery Status` <- factor(supchain $`Delivery Status` ,
+                                      levels=c("Advance shipping","Shipping on time","Late delivery","Shipping canceled"),
+                                      ordered = TRUE)
+
+supchain$`Order State`[supchain$`Order State` == "Australia Occidental"] <- "Western Australia"
+
+supchain$`Order State`[supchain$`Order State` == "Nueva Gales del Sur"] <- "New South Wales"
+
+supchain$`Order State`[supchain$`Order State` == "Territorio de la Capital Australiana"] <- "Australian Capital Territory"
+
+supchain$`Order State`[supchain$`Order State` == "Territorio del Norte"] <- "Northern Territory"
+
+supchain$`Order State`[supchain$`Order State` == "Australia del Sur"] <- "South Australia"
+
+```
+
+## Filtered and Tidy Data
+```{r echo=TRUE}
+head(supchain,5)
+```
+
+## Descriptive Statistics
+What is the average sales per customer in each state of Australia, and how does it vary across different states?
+
+The state of **New South Wales** has the highest average sales per customer, with a mean value of approximately $183.35. Therefore, New South Wales appears to have the highest average sales per customer among all the states in Australia.
+
+```{r echo=TRUE}
+supchain %>% group_by(`Order State`) %>% summarise(Min = min(`Order Item Total`,na.rm = TRUE),
+                                                       Q1 = quantile(`Order Item Total`,probs = .25,na.rm = TRUE),
+                                                       Median = median(`Order Item Total`, na.rm = TRUE),
+                                                       Q3 = quantile(`Order Item Total`,probs = .75,na.rm = TRUE),
+                                                       Max = max(`Order Item Total`,na.rm = TRUE),
+                                                       Mean = mean(`Order Item Total`, na.rm = TRUE),
+                                                       SD = sd(`Order Item Total`, na.rm = TRUE),
+                                                       n = n(),
+                                                       Missing = sum(is.na(`Order Item Total`)))
+                                                       
+```
+
+## Data Visualisation
+```{r echo=TRUE}
+ggplot(data = supchain) + 
+  stat_summary(mapping = aes(y = `Order State`, x = `Order Item Total`), 
+               fun.min = min, fun.max = max, fun = median) + 
+  labs(title = "Order Item Total by Order State", y="Order State",x = "Order Item Total")
+
+```
+
+## Outlier Visualisation
+
+We've got NULL for each group, it's possible that there are no outliers detected within each group. This might mean that the data within each group does not contain values that are considered outliers based on the default definition.
+
+```{r echo=TRUE}
+boxplot(`Order Item Total` ~ `Order State`, data = supchain,
+        main = "Boxplot of Order Item Total by State",
+        xlab = "Order State", ylab = "Order Item Total",
+        las = 2, 
+        cex.axis = 0.4)
+outliers <- by(supchain$`Order Item Total`, supchain$`Order State`, boxplot.stats)$out
+outliers
+
+```
+
+## Chi-square Test of Association: 
+Is there an association between delivery status and shipping mode?
+
+* *Null Hypothesis HO:* States that there is no association between Shipping Mode and Delivery Status.
+* *Alternative Hypothesis HA:* The alternative hypothesis suggests that there is an association between the two variables.
+* *Assumption:* No more than 25% of expected cell counts are below 5
+
+```{r warning = FALSE,echo=TRUE}
+t1 <- table(supchain$`Delivery Status`, supchain$`Shipping Mode`)
+table1 <- prop.table(t1, margin = 2)
+# Perform chi-square test of independence
+chi_square_test <- chisq.test(t1)
+# Create the barplot using the proportions table
+barplot(
+  table1,
+  ylab = "Proportion Within Group",
+  ylim = c(0, 1.0),
+  beside = TRUE,
+  xlab = "Shipping Mode",
+  col = brewer.pal(nrow(table1), name = "Blues")
+)
+
+# Add the legend on the right side
+legend(
+  "topright",
+  legend = rownames(table1),
+  fill = brewer.pal(nrow(table1), name = "Blues"),
+  title = "Delivery Status",
+  horiz = FALSE
+)
+```
+
+## Chi-square test results
+```{r echo=TRUE}
+cat("Chi-Square Test Results:\n")
+print(chi_square_test)
+chi_square_test$observed
+chi_square_test$expected
+```
+
+The p-value from the chi-square test is greater than the chosen significance level (commonly 0.05), we fail to reject the null hypothesis. This indicates that we do not have enough evidence to conclude that there is an association between Shipping Mode and Delivery Status.
+p = 0.9898 >0.05, fail to reject H0. [using P value to make a decision about the hypothesis.]
+The Chi-square test of association was not statistically significant. There was no evidence of an association between Shipping mode and delivery status.
+Based on the results of the chi-square test, we can conclude that there is no significant association between Shipping Mode and Delivery Status. In other words, the method of shipping chosen does not appear to have a significant impact on the delivery status of orders.
+
+
+
+## Regression analysis
+
+This scatter plot with a linear regression line visually explores and quantifies the linear relationship between "Benefit per order" and "Order Item Total", helping identify trends, assess strength.
+
+```{r warning = FALSE,echo=TRUE}
+# Scatter plot to check linearity assumption
+ggplot(supchain, aes(x = `Benefit per order`, y = `Order Item Total`)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  labs(title = "Scatter Plot of Benefit per order vs. Order Item Total")
+```
+
+## Simple linear regression model
+Does the benefit per order influence the total order amount in the supply chain dataset?
+
+The linear regression analysis indicates a significant positive relationship between `Benefit per order` and `Order Item Total` in the supply chain dataset (p < 0.001). However, the `Benefit per order` explains only a small portion of the variance in `Order Item Total` (R-squared = 0.59%).
+
+```{r echo=TRUE}
+lm_model <- lm(`Order Item Total` ~ `Benefit per order`, data = supchain)
+summary(lm_model)
+```
+
+## Assumptions:
+* Linearity: The scatter plot indicated a linear relationship, with no evidence of non-linear trends in the Residual vs. fitted plot.
+* Normality of residuals: The Normal Q-Q plot did not reveal any significant deviations from normality.
+* Influential cases: There were no apparent influential cases.
+* Homoscedasticity: The scale-location plot showed that the variance of the residuals was consistent across the predicted values, suggesting homoscedasticity. 
+
+```{r}
+par(mfrow = c(2,2))
+plot(lm_model)
+```
+
+## Discussion
+
+In this analysis, we investigated the relationships between shipping modes, delivery outcomes, and order financials within the Australian segment of the DataCo Smart Supply Chain dataset. Key findings include:
+
+1. **Shipping Mode and Delivery Status:** The Chi-square test showed no significant association between shipping modes and delivery statuses (p = 0.9898). This suggests that the choice of shipping mode does not significantly affect the likelihood of on-time or late deliveries.
+
+2. **Benefit per Order and Order Item Total:** The regression shows a significant positive relationship between 'Benefit per order' and 'Order Item Total', though the effect size is small (Estimate = 0.0828). The model explains very little variance (R² = 0.0059), suggesting other factors are more influential.
+
+3. **Descriptive Statistics:** New South Wales had the highest average sales per customer at approximately $183.35, indicating higher-value orders in this state compared to others.
+
+4. **Outliers and Missing Values:** The data showed no significant outliers in `Order Item Total` by state, suggesting consistency across the dataset.
+
+Overall, while certain trends were identified, the lack of a strong impact of shipping mode on delivery outcomes highlights the need for a more comprehensive analysis with additional variables to better understand the factors influencing delivery performance and order values.
+
+## References
+
+1. kaggle. DataCo SMART SUPPLY CHAIN FOR BIG DATA ANALYSIS. https://www.kaggle.com/datasets/shashwatwork/dataco-smart-supply-chain-for-big-data-analysis/discussion
+
+2.  APPLIED ANALYTICS (2016). Module 9 Simple Linear Regression and Correlation. https://astral-theory-157510.appspot.com/secured/MATH1324_Module_09.html
+
+3. APPLIED ANALYTICS (2016). Module 2 Descriptive Statistics through Visualisation. https://astral-theory-157510.appspot.com/secured/MATH1324_Module_02.html
+
+4. APPLIED ANALYTICS (2016). R Bootcamp - Course 3: Basic Statistics in R. https://astral-theory-157510.appspot.com/secured/RBootcamp_Course_03.html
+
+5. APPLIED ANALYTICS (2016). Module 8 Categorical Associations. https://astral-theory-157510.appspot.com/secured/MATH1324_Module_08.html
+
